@@ -25,7 +25,6 @@ jobs:
       working-directory: .
       run: |
         npm install
-        npm run build
     
     - name: 'Login'
       uses: azure/login@v1
