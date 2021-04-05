@@ -419,7 +419,7 @@ window.onload = async function () {
                         }
                         console.log(self.level);
                         message = {
-                            text: player.username + "killed!",
+                            text: player.username + " killed!",
                             color: "green",
                             size: "150",
                             duration: 60
