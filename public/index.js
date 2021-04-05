@@ -427,6 +427,7 @@ window.onload = async function () {
                     } else {
                         self.level--;
                         if (self.level <= 0) {
+                            self.level = 0;
                             message = {
                                 text: "GAME OVER",
                                 color: "red",
