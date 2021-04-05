@@ -414,7 +414,7 @@ window.onload = async function () {
                 if (collision) {
                     console.log("collision", collision, "compare", compare(self.type, player.type));
                     if (compare(self.type, player.type) && compare(self.type, player.type) != "draw") {
-                        if (self.level < 3) {
+                        if (self.level < 4) {
                             self.level++;
                         }
                         console.log(self.level);
