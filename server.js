@@ -48,7 +48,7 @@ io.on("connection", function (socket) {
         }
     });
 
-    socket.on("update", function (level, x, y, mouseX, mouseY) {
+    socket.on("update", function (level, x, y, dir) {
         socket.level = level;
         socket.x = x;
         socket.y = y;
@@ -60,19 +60,19 @@ io.on("connection", function (socket) {
             type: socket.type,
             level: socket.level,
             x: socket.x,
-            y: socket.y
+            y: socket.y,
+            dir: dir
         });
 
         socket.broadcast.emit("user", {
             userType: "otherPlayer",
             username: socket.username,
             gameAreaSize: gameArea,
-            currentMouseX: mouseX,
-            currentMouseY: mouseY,
             type: socket.type,
             level: socket.level,
             x: socket.x,
-            y: socket.y
+            y: socket.y,
+            dir: dir
         });
     });
 

@@ -365,8 +365,6 @@ window.onload = async function () {
         socket.on("user", (user) => {
             if (user.userType == "self") {
                 self = user;
-                self.currentMouseX = currentMouseX;
-                self.currentMouseY = currentMouseY;
                 self.gameAreaSize = user.gameAreaSize;
 
                 switch (self.type) {
@@ -388,8 +386,7 @@ window.onload = async function () {
                     player.x = user.x;
                     player.y = user.y;
                     player.level = user.level;
-                    player.currentMouseX = user.currentMouseX;
-                    player.currentMouseY = user.currentMouseY;
+                    player.dir = user.dir;
                 } else {
                     players.push(user);
                 }
@@ -406,9 +403,13 @@ window.onload = async function () {
         });
 
         setInterval(() => {
-            if (self) {
-                socket.emit("update", self.level, self.x, self.y, currentMouseX, currentMouseY);
+            if (self) socket.emit("update", self.level, self.x, self.y, self.dir);
+        }, 500);
 
+        setInterval(draw, 50);
+
+        setInterval(() => {
+            if (self) {
                 players.forEach((player) => {
                     var collision = checkCollision(self, player);
                     if (collision) {
@@ -434,7 +435,7 @@ window.onload = async function () {
                                     size: "100",
                                     duration: 60
                                 };
-
+    
                                 setTimeout(() => {
                                     location.reload();
                                 }, 1000);
@@ -444,6 +445,15 @@ window.onload = async function () {
                     console.log("collision", collision);
                 });
             }
+        }, 500);
+        
+        setInterval(() => {
+            players.forEach((player) => {
+                if (player.dir) {
+                    player.x += player.dir.x;
+                    player.y += player.dir.y;
+                }
+            });
         }, 50);
     }
 
@@ -490,35 +500,37 @@ window.onload = async function () {
 
         //calculate mouse position
         var speed = 2.5;
+        var oldDir;
+        if (self.dir) oldDir = Object.assign({}, self.dir);
+        self.dir = {
+            x: 0,
+            y: 0
+        }
         if (currentMouseX < self.x - self.offset.x + self.image.width / 2 - 50) {
             self.x -= speed;
+            self.dir.x = speed * -1;
         } else if (currentMouseX > self.x - self.offset.x + self.image.width / 2 + 50) {
             self.x += speed;
+            self.dir.x = speed;
         }
 
         if (currentMouseY < self.y - self.offset.y + self.image.height / 2 - 50) {
             self.y -= speed;
+            self.dir.y = speed * -1;
         } else if (currentMouseY > self.y - self.offset.y + self.image.width / 2 + 50) {
             self.y += speed;
+            self.dir.y = speed;
         }
 
+        if (!oldDir || oldDir.x != self.dir.x || oldDir.y != self.dir.y) {
+            console.log("direction changed");
+            socket.emit("update", self.level, self.x, self.y, self.dir)
+        }
         //self
         drawPlayer(self);
 
         //other players
-        players.forEach((player) => {
-            drawPlayer(player);
-
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = "5";
-            ctx.beginPath();
-            ctx.moveTo(player.x + player.image.width / 2 - self.offset.x, player.y + player.image.height / 2 - self.offset.y);
-            ctx.lineTo(player.currentMouseX - self.offset.x, player.currentMouseY - self.offset.y);
-            ctx.stroke();
-            ctx.moveTo(0, 0);
-
-            drawPlayer(player);
-        });
+        players.forEach((player) => drawPlayer(player));
 
         //message
         if (message && message.duration >= 0) {
