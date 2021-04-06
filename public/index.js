@@ -405,44 +405,45 @@ window.onload = async function () {
             self.gameAreaSize = user.gameAreaSize;
         });
 
-
         setInterval(() => {
-            socket.emit("update", self.level, self.x, self.y, currentMouseX, currentMouseY);
+            if (self) {
+                socket.emit("update", self.level, self.x, self.y, currentMouseX, currentMouseY);
 
-            players.forEach((player) => {
-                var collision = checkCollision(self, player);
-                if (collision) {
-                    console.log("collision", collision, "compare", compare(self.type, player.type));
-                    if (compare(self.type, player.type) && compare(self.type, player.type) != "draw") {
-                        if (self.level < 4) {
-                            self.level++;
-                        }
-                        console.log(self.level);
-                        message = {
-                            text: player.username + " killed!",
-                            color: "green",
-                            size: "150",
-                            duration: 60
-                        }
-                    } else {
-                        self.level--;
-                        if (self.level <= 0) {
-                            self.level = 0;
+                players.forEach((player) => {
+                    var collision = checkCollision(self, player);
+                    if (collision) {
+                        console.log("collision", collision, "compare", compare(self.type, player.type));
+                        if (compare(self.type, player.type) && compare(self.type, player.type) != "draw") {
+                            if (self.level < 4) {
+                                self.level++;
+                            }
+                            console.log(self.level);
                             message = {
-                                text: "GAME OVER",
-                                color: "red",
-                                size: "100",
+                                text: player.username + " killed!",
+                                color: "green",
+                                size: "150",
                                 duration: 60
-                            };
+                            }
+                        } else {
+                            self.level--;
+                            if (self.level <= 0) {
+                                self.level = 0;
+                                message = {
+                                    text: "GAME OVER",
+                                    color: "red",
+                                    size: "100",
+                                    duration: 60
+                                };
 
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1000);
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1000);
+                            }
                         }
                     }
-                }
-                console.log("collision", collision);
-            });
+                    console.log("collision", collision);
+                });
+            }
         }, 50);
     }
 
