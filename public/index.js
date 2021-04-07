@@ -99,10 +99,10 @@ window.onload = async function () {
                 ctx.lineWidth = "5";
                 ctx.strokeRect(input.x, input.y, input.width, input.height);
                 ctx.fillStyle = "black";
-                ctx.fillText(input.value + "|", input.x, 437)
+                ctx.fillText(input.value + "|", input.x, 437, input.width)
             } else {
                 ctx.fillStyle = "black";
-                ctx.fillText(input.value, input.x, 437)
+                ctx.fillText(input.value, input.x, 437, input.width)
             }
 
 
@@ -266,7 +266,6 @@ window.onload = async function () {
                     scissors.selected = true;
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     draw();
-
                 }
 
 
@@ -357,6 +356,8 @@ window.onload = async function () {
     var self;
     var players = [];
     var message = null;
+    var immobile = false;
+    var immobileDuration = 100;
 
     function startGame(username, type) {
         socket.emit("start game");
@@ -425,20 +426,30 @@ window.onload = async function () {
                                 size: "150",
                                 duration: 60
                             }
+                            immobile = true;
+                        } else if (compare(self.type, player.type) == "draw") {
+                            message = {
+                                text: "DRAW!",
+                                color: "blue",
+                                size: "150",
+                                duration: 60
+                            };
                         } else {
-                            self.level--;
-                            if (self.level <= 0) {
-                                self.level = 0;
-                                message = {
-                                    text: "GAME OVER",
-                                    color: "red",
-                                    size: "100",
-                                    duration: 60
-                                };
-    
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 1000);
+                            if (!immobile) {
+                                self.level--;
+                                if (self.level <= 0) {
+                                    self.level = 0;
+                                    message = {
+                                        text: "GAME OVER",
+                                        color: "red",
+                                        size: "100",
+                                        duration: 60
+                                    };
+
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 1000);
+                                }
                             }
                         }
                     }
@@ -446,7 +457,7 @@ window.onload = async function () {
                 });
             }
         }, 500);
-        
+
         setInterval(() => {
             players.forEach((player) => {
                 if (player.dir) {
@@ -500,6 +511,14 @@ window.onload = async function () {
 
         //calculate mouse position
         var speed = 2.5;
+        if (immobile && self) {
+            speed = 0;
+            immobileDuration--;
+            if (immobileDuration <= 0) {
+                immobile = false;
+                immobileDuration = 100;
+            }
+        }
         var oldDir;
         if (self.dir) oldDir = Object.assign({}, self.dir);
         self.dir = {
@@ -526,6 +545,19 @@ window.onload = async function () {
             console.log("direction changed");
             socket.emit("update", self.level, self.x, self.y, self.dir)
         }
+
+        //immobile field
+        var center = {
+            x: self.x + self.image.width / 2,
+            y: self.y + self.image.height / 2
+        }
+        if (immobile) {
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(center.x - self.offset.x, center.y - self.offset.y, self.image.width / 2 + 25, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
         //self
         drawPlayer(self);
 
