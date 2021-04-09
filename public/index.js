@@ -357,7 +357,7 @@ window.onload = async function () {
     var players = [];
     var message = null;
     var immobile = false;
-    var immobileDuration = 600;
+    var immobileDuration = 100;
 
     function startGame(username, type) {
         socket.emit("start game");
