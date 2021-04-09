@@ -48,7 +48,7 @@ io.on("connection", function (socket) {
         }
     });
 
-    socket.on("update", function (level, x, y, dir) {
+    socket.on("update", function (level, x, y, dir, immobile, immobileDuration) {
         socket.level = level;
         socket.x = x;
         socket.y = y;
@@ -61,7 +61,9 @@ io.on("connection", function (socket) {
             level: socket.level,
             x: socket.x,
             y: socket.y,
-            dir: dir
+            dir: dir,
+            immobile: immobile,
+            immobileDuration: immobileDuration
         });
 
         socket.broadcast.emit("user", {
@@ -72,7 +74,9 @@ io.on("connection", function (socket) {
             level: socket.level,
             x: socket.x,
             y: socket.y,
-            dir: dir
+            dir: dir,
+            immobile: immobile,
+            immobileDuration: immobileDuration
         });
     });
 
@@ -92,6 +96,8 @@ io.on("connection", function (socket) {
         });
     });
 
+    socket.on("user killed", user => socket.broadcast.emit("user killed", user));
+    
     socket.on("disconnect", function () {
         if (socket.username) {
             gameArea.width -= 100;

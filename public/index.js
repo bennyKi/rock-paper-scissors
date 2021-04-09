@@ -357,7 +357,7 @@ window.onload = async function () {
     var players = [];
     var message = null;
     var immobile = false;
-    var immobileDuration = 100;
+    var immobileDuration = 600;
 
     function startGame(username, type) {
         socket.emit("start game");
@@ -388,12 +388,35 @@ window.onload = async function () {
                     player.y = user.y;
                     player.level = user.level;
                     player.dir = user.dir;
+                    player.immobile = user.immobile;
+                    player.immobileDuration = user.immobileDuration;
                 } else {
                     players.push(user);
                 }
                 draw();
             }
         });
+
+        socket.on("user killed", (player) => {
+            if (player.username == self.username) {
+                self.level--;
+                if (self.level < 0) {
+                    self.level = 0;
+                    message = {
+                        text: "GAME OVER",
+                        color: "red",
+                        size: "100",
+                        duration: 60
+                    };
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    socket.emit("update", self.level, self.x, self.y, self.dir, immobile, immobileDuration);
+                }
+            }
+        })
 
         socket.on("user left", (user) => {
             var index = players.findIndex((player) => player.username == user.username);
@@ -404,7 +427,7 @@ window.onload = async function () {
         });
 
         setInterval(() => {
-            if (self) socket.emit("update", self.level, self.x, self.y, self.dir);
+            if (self) socket.emit("update", self.level, self.x, self.y, self.dir, immobile, immobileDuration);
         }, 500);
 
         setInterval(draw, 50);
@@ -414,19 +437,22 @@ window.onload = async function () {
                 players.forEach((player) => {
                     var collision = checkCollision(self, player);
                     if (collision) {
-                        console.log("collision", collision, "compare", compare(self.type, player.type));
-                        if (compare(self.type, player.type) && compare(self.type, player.type) != "draw") {
-                            if (self.level < 4) {
-                                self.level++;
+                        var comparasion = compare(self.type, player.type) && compare(player.type, self.type) == false;
+                        if (comparasion && compare(self.type, player.type) != "draw") {
+                            if (!player.immobile && !self.immobile) {
+                                if (self.level < 3 && !immobile) {
+                                    self.level++;
+                                }
+                                message = {
+                                    text: player.username + " killed!",
+                                    color: "green",
+                                    size: "150",
+                                    duration: 60
+                                }
+                                immobile = true;
+                                socket.emit("user killed", player);
                             }
-                            console.log(self.level);
-                            message = {
-                                text: player.username + " killed!",
-                                color: "green",
-                                size: "150",
-                                duration: 60
-                            }
-                            immobile = true;
+                            socket.emit("update", self.level, self.x, self.y, self.dir, immobile, immobileDuration);
                         } else if (compare(self.type, player.type) == "draw") {
                             message = {
                                 text: "DRAW!",
@@ -434,26 +460,8 @@ window.onload = async function () {
                                 size: "150",
                                 duration: 60
                             };
-                        } else {
-                            if (!immobile) {
-                                self.level--;
-                                if (self.level <= 0) {
-                                    self.level = 0;
-                                    message = {
-                                        text: "GAME OVER",
-                                        color: "red",
-                                        size: "100",
-                                        duration: 60
-                                    };
-
-                                    setTimeout(() => {
-                                        location.reload();
-                                    }, 1000);
-                                }
-                            }
                         }
                     }
-                    console.log("collision", collision);
                 });
             }
         }, 500);
@@ -461,8 +469,16 @@ window.onload = async function () {
         setInterval(() => {
             players.forEach((player) => {
                 if (player.dir) {
-                    player.x += player.dir.x;
-                    player.y += player.dir.y;
+                    if (player.immobile) {
+                        player.immobileDuration -= 1.5;
+                        if (player.immobileDuration <= 0) {
+                            player.immobile = false;
+                            player.immobileDuration = 100;
+                        }
+                    } else {
+                        player.x += player.dir.x;
+                        player.y += player.dir.y;
+                    }
                 }
             });
         }, 50);
@@ -542,20 +558,7 @@ window.onload = async function () {
         }
 
         if (!oldDir || oldDir.x != self.dir.x || oldDir.y != self.dir.y) {
-            console.log("direction changed");
-            socket.emit("update", self.level, self.x, self.y, self.dir)
-        }
-
-        //immobile field
-        var center = {
-            x: self.x + self.image.width / 2,
-            y: self.y + self.image.height / 2
-        }
-        if (immobile) {
-            ctx.fillStyle = "red";
-            ctx.beginPath();
-            ctx.arc(center.x - self.offset.x, center.y - self.offset.y, self.image.width / 2 + 25, 0, 2 * Math.PI);
-            ctx.fill();
+            socket.emit("update", self.level, self.x, self.y, self.dir, immobile, immobileDuration);
         }
 
         //self
@@ -572,6 +575,19 @@ window.onload = async function () {
     }
 
     function drawPlayer(player) {
+        if (player.image) {
+            var center = {
+                x: player.x + player.image.width / 2,
+                y: player.y + player.image.height / 2
+            }
+            if (player.immobile) {
+                ctx.fillStyle = "red";
+                ctx.beginPath();
+                ctx.arc(center.x - self.offset.x, center.y - self.offset.y, player.image.width / 2 + 25, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
         switch (player.type) {
             case "walk":
                 if (player.userType == "self") { check(player, images.walk[player.level]); }
